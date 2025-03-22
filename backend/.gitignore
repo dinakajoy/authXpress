@@ -1,0 +1,7 @@
+logs 
+node_modules 
+.env 
+dump.rdb 
+dist
+certs
+coverage 

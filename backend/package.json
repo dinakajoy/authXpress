@@ -1,0 +1,64 @@
+{
+  "name": "authxpress",
+  "version": "1.0.0",
+  "description": "AuthXpress is a robust and secure authentication system",
+  "main": "dist/src/server.js",
+  "scripts": {
+    "dev": "nodemon",
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && node ./dist/src/server.js",
+    "test": "NODE_ENV=test jest ./app.test.ts ./auth.test.ts --coverage --verbose --detectOpenHandles"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dinakajoy/authXpress.git"
+  },
+  "keywords": [
+    "Authentication"
+  ],
+  "author": "Odinaka Joy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dinakajoy/authXpress/issues"
+  },
+  "homepage": "https://github.com/dinakajoy/authXpress#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "compression": "^1.7.5",
+    "config": "^3.3.12",
+    "cors": "^2.8.5",
+    "dotenv-safe": "^9.1.0",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.0",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "mongoose": "^8.9.2",
+    "nodemailer": "^6.9.16",
+    "ts-node": "^10.9.2",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/compression": "^1.7.5",
+    "@types/config": "^3.3.5",
+    "@types/cors": "^2.8.17",
+    "@types/dotenv-safe": "^8.1.6",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/lodash": "^4.17.13",
+    "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
+    "@types/supertest": "^6.0.2",
+    "concurrently": "^9.1.0",
+    "i": "^0.3.7",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "npm": "^11.0.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}
