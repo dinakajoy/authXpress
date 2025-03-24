@@ -9,7 +9,6 @@ export const fetchPermissions = async () => {
 
 export const fetchRoles = async () => {
   const { data } = await axios.get(`${apiUrl}/user-role`);
-  console.log("===========", data.userRoles)
   return data.userRoles;
 };
 
