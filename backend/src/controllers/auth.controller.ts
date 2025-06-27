@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import config from "config";
-import { logger } from "../utils";
+import crypto from "crypto";
+import UserModel from "../models/user.model";
 import {
   createUser,
   findUserByEmail,
@@ -11,19 +12,20 @@ import {
   validateUser,
 } from "../services/user.service";
 import {
-  signAccessToken,
-  signPasswordAccessToken,
-  verifyAccessToken,
-} from "../utils/jwtUtils";
-import { ICreateToken } from "../interfaces/token.interface";
-import {
   AlreadyExistingUserException,
   CustomException,
   ServerErrorException,
   WrongCredentialsException,
 } from "../utils/errors";
-import sendMail from "../utils/emailSender";
 import transporter from "../utils/emailSender";
+import {
+  signAccessToken,
+  signPasswordAccessToken,
+  verifyAccessToken,
+} from "../utils/jwtUtils";
+import { ICreateToken } from "../interfaces/token.interface";
+import { logger } from "../utils";
+import { IUser } from "../interfaces/user.interfaces";
 
 export const register = async (
   req: Request,
@@ -45,7 +47,7 @@ export const register = async (
     return;
   } catch (error: any) {
     logger.error(`Register Controller Error: ${error.message}`);
-    return next(new (ServerErrorException as any)());
+    return next(new (CustomException as any)(400, error.message));
   }
 };
 
@@ -105,10 +107,24 @@ export const forgotPasswordController = async (
       })
     );
   }
-  const token = await signPasswordAccessToken({ email: user.email }, next);
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  await UserModel.findByIdAndUpdate(
+    user._id,
+    {
+      resetToken: hashedToken,
+      resetTokenExpiry: new Date(Date.now() + 15 * 60 * 1000), // 15 mins expiry
+    },
+    { new: true }
+  );
 
   const clientUrl = config.get("environment.clientUrl") as string;
-  const resetLink = `${clientUrl}/reset-password?token=${token}`;
+  const resetLink = `${clientUrl}/reset-password?token=${hashedToken}`;
 
   try {
     const mailSent = await transporter.sendMail({
@@ -141,23 +157,28 @@ export const resetPasswordController = async (
   const { token, password } = req.body;
 
   try {
-    const tokenIsValid = await verifyAccessToken(
-      { token, isRefreshToken: false },
-      next
-    );
-    if (!tokenIsValid) {
-      return next(new (CustomException as any)("Invalid or expired token."));
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await UserModel.findOne({
+      resetToken: hashedToken,
+      resetTokenExpiry: {
+        gte: new Date(), // Ensure the token hasn't expired
+      },
+    });
+    if (!user) {
+      return next(
+        new (CustomException as any)(
+          400,
+          "The reset password link is invalid or has expired."
+        )
+      );
     }
-    const confirmUser = await isUser(tokenIsValid.payload.email, next);
-    if (confirmUser) {
-      await updatePassword(tokenIsValid.email, password, next);
-      res.status(200).json({
-        status: "success",
-        message: "Password updated successfully",
-      });
-      return;
-    }
-    return next(new (CustomException as any)(500, "Operation unsuccessful"));
+
+    await updatePassword(user.email, password, next);
+    res.status(200).json({
+      status: "success",
+      message: "Password updated successfully",
+    });
+    return;
   } catch (error: any) {
     logger.error(
       `resetPasswordController AuthController Error: ${error.message}`
@@ -167,6 +188,22 @@ export const resetPasswordController = async (
     }
     return next(new (CustomException as any)("Invalid token."));
   }
+};
+
+export const getCurrentUserController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const currentUserEmail = req.body.email;
+
+  const user = await findUserByEmail(currentUserEmail, () => {});
+  if (!user) {
+    res.status(401).json({ message: "User not authenticated" });
+    return;
+  }
+  res.status(201).json(user);
+  return;
 };
 
 export const refreshTokenController = async (

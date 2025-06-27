@@ -6,6 +6,7 @@ import { LoginResponse } from "../interfaces/user";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,18 +19,16 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      setError(null);
       const { data } = await axios.post<LoginResponse>(
         `${process.env.REACT_APP_API}/auth/login`,
         { email, password },
         { headers: { "Content-Type": "application/json" } }
       );
 
-      // Save the token in local storage for authentication
-      localStorage.setItem("token", data.payload.token);
-
-      if (data.payload) {
-        navigate("/dashboard");
+      if (data) {
+        // Save the token in local storage for authentication
+        localStorage.setItem("token", data.payload.token);
+        return navigate("/dashboard");
       }
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
@@ -43,12 +42,36 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    setError(null);
+    const authWindow = window.open(
+      `${process.env.REACT_APP_API}/auth/google/popup`,
+      "_blank",
+      "width=500,height=600"
+    );
+
+    const messageHandler = (event: MessageEvent) => {
+      if (event.origin !== process.env.NEXT_PUBLIC_SERVER_URL) return;
+      console.log("===============", event);
+
+      const { token } = event.data;
+      if (token) {
+        console.log("Received token from popup:", token);
+        localStorage.setItem("token", token);
+        return navigate("/dashboard");
+      }
+    };
+
+    window.addEventListener("message", messageHandler, false);
+
+    // cleanup
+    const cleanup = () => window.removeEventListener("message", messageHandler);
+    authWindow?.addEventListener("beforeunload", cleanup);
+  };
+
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-6 rounded shadow-md w-80 space-y-4"
-      >
+      <form className="bg-white p-6 rounded shadow-md w-80 space-y-4">
         <h1 className="text-2xl font-bold text-center">Login</h1>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <input
@@ -75,9 +98,11 @@ const Login: React.FC = () => {
           </button>
         </div>
         <button
-          type="submit"
           className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
           disabled={isSumbitting}
+          type="submit"
+          aria-label="Login"
+          onClick={handleLogin}
         >
           {isSumbitting ? (
             <div className="flex items-center justify-center space-x-2">
@@ -87,6 +112,18 @@ const Login: React.FC = () => {
           ) : (
             "Login"
           )}
+        </button>
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className="flex items-center justify-center gap-2 w-full max-w-xs border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 px-4 py-2 rounded shadow-sm transition"
+        >
+          <img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google"
+            className="w-5 h-5"
+          />
+          Continue with Google
         </button>
         <div className="text-center text-sm mt-4">
           <p>

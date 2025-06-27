@@ -4,7 +4,17 @@ import { body, validationResult } from "express-validator";
 export const signupValidation = () => [
   body("name").not().isEmpty().trim().escape(),
   body("email").isEmail().normalizeEmail(),
-  body("password").isLength({ min: 5 }).isStrongPassword(),
+  body("password")
+    .isStrongPassword({
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    })
+    .withMessage(
+      "Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one special character."
+    ),
 ];
 
 export const loginValidation = () => [
@@ -36,4 +46,5 @@ export const validate = (req: Request, res: Response, next: NextFunction) => {
     status: "error",
     error: `Invalid value for ${errors.array()[0].path}`,
   });
+  return;
 };

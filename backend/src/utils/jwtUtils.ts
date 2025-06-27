@@ -2,7 +2,7 @@ import { NextFunction } from "express";
 import config from "config";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv-safe";
-import logger from "../utils/logger";
+import logger from "./logger";
 import { CustomException } from "./errors";
 import { ICreateToken, IVerifyToken } from "../interfaces/token.interface";
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ErrorResponse, SuccessResponse } from "../interfaces/user";
+import { SuccessResponse } from "../interfaces/user";
 import axios from "axios";
 
 const ForgotPassword: React.FC = () => {

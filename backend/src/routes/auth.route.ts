@@ -6,6 +6,7 @@ import {
   resetPasswordController,
   refreshTokenController,
   logoutController,
+  getCurrentUserController,
 } from "../controllers/auth.controller";
 import {
   forgetPasswordValidation,
@@ -18,10 +19,8 @@ import { acountLimiter, isAuthenticated } from "../middlewares";
 
 const router = Router();
 
-// Register route
 router.post("/register", signupValidation(), validate, register);
 
-// Login Route
 router.post("/login", loginValidation(), validate, login);
 
 // Forgot Password route
@@ -41,7 +40,9 @@ router.put(
   resetPasswordController
 );
 
-// Refresh Token route
+router.get("/current-user", isAuthenticated, getCurrentUserController);
+
+// Refresh Token routelpll
 router.get("/refresh-token", refreshTokenController);
 
 // Logout route

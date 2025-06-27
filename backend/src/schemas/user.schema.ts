@@ -6,6 +6,8 @@ interface IUserSchema extends Document {
   role?: string;
   password: string;
   token: string;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
   createdAt: Date;
   validatePassword(password: string): Promise<boolean>;
   hashPasswordd(password: string): Promise<string>;

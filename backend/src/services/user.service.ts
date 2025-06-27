@@ -6,6 +6,7 @@ import { logger } from "../utils";
 import {
   ServerErrorException,
   WrongCredentialsException,
+  CustomException,
 } from "../utils/errors";
 import { IUserRefreshToken } from "../interfaces/token.interface";
 
@@ -15,7 +16,7 @@ export const createUser = async (data: IUser, next: NextFunction) => {
     return omit(user.toJSON(), "password");
   } catch (error: any) {
     logger.error(`createUser UserService Error: ${error.message}`);
-    return next(new (ServerErrorException as any)());
+    return next(new (CustomException as any)(error.message));
   }
 };
 
@@ -71,7 +72,7 @@ export const updatePassword = async (
       const hashedPassword = await user.hashPasswordd(password);
       const updatedUser = await UserModel.updateOne(
         { email: email },
-        { password: hashedPassword }
+        { password: hashedPassword, resetToken: null, resetTokenExpiry: null }
       );
       if (updatedUser) {
         return true;

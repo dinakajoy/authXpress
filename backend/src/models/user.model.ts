@@ -7,13 +7,15 @@ const UserSchema: Schema<IUserSchema> = new Schema<IUserSchema>({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   role: { type: String },
-  password: { type: String, required: true },
+  password: { type: String },
   token: { type: String },
+  resetToken: { type: String },
+  resetTokenExpiry: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 
 UserSchema.pre<IUserSchema>("save", async function (next) {
-  if (!this.isModified("password")) {
+  if (!this.password || !this.isModified("password")) {
     return next();
   }
 
@@ -23,7 +25,7 @@ UserSchema.pre<IUserSchema>("save", async function (next) {
     );
     const hashedPassword = await bcrypt.hash(this.password, salt);
     this.password = hashedPassword;
-    next();
+    return next();
   } catch (err: any) {
     return next(err);
   }
@@ -46,6 +48,9 @@ UserSchema.methods.validatePassword = async function (
   return await bcrypt.compare(password, this.password);
 };
 
-const UserModel: Model<IUserSchema> = mongoose.model<IUserSchema>("User", UserSchema);
+const UserModel: Model<IUserSchema> = mongoose.model<IUserSchema>(
+  "User",
+  UserSchema
+);
 
 export default UserModel;

@@ -1,35 +1,36 @@
-import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
-import { PermissionGroupType } from '../constants';
+import { Request, Response, NextFunction } from "express";
+import { body, validationResult } from "express-validator";
+import { PermissionGroupType } from "../constants";
 
 export const createPermissionValidation = () => [
-  body('name')
+  body("name")
     .trim()
     .notEmpty()
-    .withMessage('Permission name is required')
+    .withMessage("Permission name is required")
     .isString()
-    .withMessage('Permission name must be a string'),
+    .withMessage("Permission name must be a string"),
 
-  body('description')
+  body("description")
     .optional()
     .trim()
     .isString()
-    .withMessage('Description must be a string'),
+    .withMessage("Description must be a string"),
 
-  body('group')
+  body("group")
     .notEmpty()
-    .withMessage('Permission group is required')
+    .withMessage("Permission group is required")
     .isIn(Object.values(PermissionGroupType))
-    .withMessage('Invalid permission group'),
+    .withMessage("Invalid permission group"),
 ];
 
 export const validate = (req: Request, res: Response, next: NextFunction) => {
   const errors: any = validationResult(req);
   if (errors.isEmpty()) {
-    return next();
+    next();
   }
   res.status(422).json({
-    status: 'error',
+    status: "error",
     error: `Invalid value for ${errors.array()[0].path}`,
   });
+  return;
 };

@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import { Request, Response, NextFunction } from "express";
+import { body, validationResult } from "express-validator";
 import mongoose from "mongoose";
 
 export const createUserRoleValidation = () => [
@@ -21,21 +21,25 @@ export const createUserRoleValidation = () => [
     .isArray()
     .withMessage("Permissions must be an array of IDs")
     .custom((permission) => {
-      if (!permission.every((id: mongoose.Types.ObjectId) => mongoose.Types.ObjectId.isValid(id))) {
+      if (
+        !permission.every((id: mongoose.Types.ObjectId) =>
+          mongoose.Types.ObjectId.isValid(id)
+        )
+      ) {
         throw new Error("Invalid permission ID format");
       }
       return true;
     }),
 ];
 
-
 export const validate = (req: Request, res: Response, next: NextFunction) => {
   const errors: any = validationResult(req);
   if (errors.isEmpty()) {
-    return next();
+    next();
   }
   res.status(422).json({
-    status: 'error',
+    status: "error",
     error: `Invalid value for ${errors.array()[0].path}`,
   });
+  return;
 };
