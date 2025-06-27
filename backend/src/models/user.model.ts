@@ -11,6 +11,8 @@ const UserSchema: Schema<IUserSchema> = new Schema<IUserSchema>({
   token: { type: String },
   resetToken: { type: String },
   resetTokenExpiry: { type: Date },
+  twoFASecret: { type: String },
+  twoFAEnabled: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

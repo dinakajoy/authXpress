@@ -8,6 +8,8 @@ interface IUserSchema extends Document {
   token: string;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  twoFASecret?: string;
+  twoFAEnabled?: boolean;
   createdAt: Date;
   validatePassword(password: string): Promise<boolean>;
   hashPasswordd(password: string): Promise<string>;

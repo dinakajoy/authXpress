@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
-import { LoginResponse } from "../interfaces/user";
+import { IUser, LoginResponse } from "../interfaces/user";
+import Setup2FAModal from "../components/Setup2FA";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +13,20 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSumbitting, setIsSumbitting] = useState<boolean>(false);
+  const [user, setUser] = useState<IUser | null>(null);
+  const [code, setCode] = useState("");
+  const [show2FAInput, setShow2FAInput] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+
+  const submit2FACode = async () => {
+    const res = await axios.post(`${process.env.REACT_APP_API}/2fa/verify`, {
+      email,
+      token: code,
+    });
+
+    localStorage.setItem("token", res.data.token);
+    navigate("/dashboard");
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     setIsSumbitting(true);
@@ -26,9 +41,17 @@ const Login: React.FC = () => {
       );
 
       if (data) {
-        // Save the token in local storage for authentication
-        localStorage.setItem("token", data.payload.token);
-        return navigate("/dashboard");
+        if (data.payload.twoFAEnabled) {
+          setShow2FAInput(true);
+          setUser(data.payload);
+          return;
+        } else {
+          // Save the token in local storage for authentication
+          setShow2FAModal(true);
+          setUser(data.payload);
+
+          // return navigate("/dashboard");
+        }
       }
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
@@ -42,33 +65,35 @@ const Login: React.FC = () => {
     }
   };
 
+  // const handleGoogleLogin = () => {
+  //   setError(null);
+  //   const authWindow = window.open(
+  //     `${process.env.REACT_APP_API}/auth/google/popup`,
+  //     "_blank",
+  //     "width=500,height=600"
+  //   );
+
+  //   const messageHandler = (event: MessageEvent) => {
+  //     if (event.origin !== process.env.NEXT_PUBLIC_SERVER_URL) return;
+  //     console.log("===============", event);
+
+  //     const { token } = event.data;
+  //     if (token) {
+  //       console.log("Received token from popup:", token);
+  //       localStorage.setItem("token", token);
+  //       return navigate("/dashboard");
+  //     }
+  //   };
+
+  //   window.addEventListener("message", messageHandler, false);
+
+  //   // cleanup
+  //   const cleanup = () => window.removeEventListener("message", messageHandler);
+  //   authWindow?.addEventListener("beforeunload", cleanup);
+  // };
   const handleGoogleLogin = () => {
-    setError(null);
-    const authWindow = window.open(
-      `${process.env.REACT_APP_API}/auth/google/popup`,
-      "_blank",
-      "width=500,height=600"
-    );
-
-    const messageHandler = (event: MessageEvent) => {
-      if (event.origin !== process.env.NEXT_PUBLIC_SERVER_URL) return;
-      console.log("===============", event);
-
-      const { token } = event.data;
-      if (token) {
-        console.log("Received token from popup:", token);
-        localStorage.setItem("token", token);
-        return navigate("/dashboard");
-      }
-    };
-
-    window.addEventListener("message", messageHandler, false);
-
-    // cleanup
-    const cleanup = () => window.removeEventListener("message", messageHandler);
-    authWindow?.addEventListener("beforeunload", cleanup);
+    window.location.href = `${process.env.REACT_APP_API}/auth/google`;
   };
-
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <form className="bg-white p-6 rounded shadow-md w-80 space-y-4">
@@ -145,6 +170,12 @@ const Login: React.FC = () => {
           </p>
         </div>
       </form>
+      {user && show2FAModal && (
+        <Setup2FAModal
+          email={user.email}
+          onClose={() => setShow2FAModal(false)}
+        />
+      )}
     </div>
   );
 };

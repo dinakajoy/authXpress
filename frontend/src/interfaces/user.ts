@@ -4,13 +4,12 @@ export interface IUser {
   email: string;
   role?: string;
   token?: string;
+  password?: string;
+  twoFAEnabled?: boolean;
 }
 
 export interface LoginResponse {
-  payload: {
-    token: string;
-    user: IUser;
-  };
+  payload: IUser;
 }
 
 export interface ForgotPasswordResponse {

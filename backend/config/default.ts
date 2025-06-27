@@ -7,6 +7,7 @@ export default {
     host: String(process.env.HOST || "0.0.0.0"),
     port: Number(String(process.env.PORT)) || 1337,
     clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
+    secret: process.env.SECRET || "http://localhost:3000",
   },
   dbConfig: {
     url: process.env.DATABASE_URL || "",
