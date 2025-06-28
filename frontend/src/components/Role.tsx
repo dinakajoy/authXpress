@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SquarePen, Trash2 } from "lucide-react";
-import { IRole, IPermission } from "../interfaces/roles-permissions";
+import {
+  IRole,
+  IPermission,
+  IRoleWithPermission,
+} from "../interfaces/roles-permissions";
 import { fetchPermissions, fetchRoles } from "../utils";
 import RoleModal from "./RoleModal";
 import DeleteModal from "./DeleteModal";
@@ -9,7 +13,7 @@ import { useUser } from "../context/UserContext";
 
 const Role = () => {
   const { userPermissions } = useUser();
-  const [role, setRole] = useState<IRole | null>(null);
+  const [role, setRole] = useState<IRoleWithPermission | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showDeleteModal, setDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,19 +86,14 @@ const Role = () => {
           <tbody>
             {userRoles &&
               permissions &&
-              userRoles.map((role: IRole) => (
+              userRoles.map((role: IRoleWithPermission) => (
                 <tr key={role._id}>
                   <td className="p-2">{role.label}</td>
                   <td className="p-2">{role.description || "-"}</td>
                   <td className="p-2">
-                    {role.permission.length > 0
+                    {role.permission && role.permission.length > 0
                       ? role.permission
-                          .map((permId) => {
-                            const foundPerm = permissions.find(
-                              (p: IPermission) => p._id === permId
-                            );
-                            return foundPerm ? foundPerm.name : permId;
-                          })
+                          .map((perm: IPermission) => perm.name)
                           .join(", ")
                       : "-"}
                   </td>

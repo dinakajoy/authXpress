@@ -75,7 +75,7 @@ const Users = () => {
                     <td className="p-2">{user.role ? user.role.label : "-"}</td>
                     <td className="p-2">
                       <div className="flex justify-center items-center gap-4">
-                        {hasPermission("Delete user") && (
+                        {hasPermission("Edit user") && (
                           <span className="text-blue-600 hover:text-blue-800 transition duration-300 cursor-pointer">
                             <SquarePen
                               size={20}

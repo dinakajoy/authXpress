@@ -4,11 +4,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Yup from "yup";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { IPermission, IRole } from "../interfaces/roles-permissions";
+import {
+  IPermission,
+  IRole,
+  IRoleWithPermission,
+} from "../interfaces/roles-permissions";
 
 type IRoleModal = {
   closeSidebar: () => void;
-  role?: IRole | null;
+  role?: IRoleWithPermission | null;
   permissions: IPermission[];
 };
 
@@ -29,7 +33,7 @@ const RoleModal = ({ closeSidebar, role, permissions }: IRoleModal) => {
   const initialValues = {
     label: role?.label || "",
     description: role?.description || "",
-    permission: role?.permission || [],
+    permission: role?.permission.map((perm: IPermission) => perm._id) || [],
   };
 
   const roleMutation = useMutation<{ message: string }, Error, IRole>({
@@ -112,15 +116,23 @@ const RoleModal = ({ closeSidebar, role, permissions }: IRoleModal) => {
             initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={(values, { setSubmitting, resetForm }) => {
-              roleMutation.mutate(values, {
-                onSuccess: () => {
-                  resetForm();
-                  setMessage("Successful request");
+              roleMutation.mutate(
+                {
+                  ...values,
+                  permission: values.permission.filter(
+                    (perm): perm is string => perm !== undefined
+                  ),
                 },
-                onError: (err) => {
-                  setError(err.message);
-                },
-              });
+                {
+                  onSuccess: () => {
+                    resetForm();
+                    setMessage("Successful request");
+                  },
+                  onError: (err) => {
+                    setError(err.message);
+                  },
+                }
+              );
               setSubmitting(false);
             }}
           >

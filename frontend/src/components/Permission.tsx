@@ -40,8 +40,6 @@ const Permission = () => {
     setShowSidebar(false);
   };
 
-  console.log("Permissions:", userPermissions);
-
   const hasPermission = (permName: string) =>
     userPermissions.includes(permName);
 
@@ -83,7 +81,7 @@ const Permission = () => {
                     <td className="p-2">{permission.group}</td>
                     <td className="p-2">
                       <div className="flex justify-center items-center gap-4">
-                        {/* {hasPermission("Delete permission") && ( */}
+                        {hasPermission("Edit permission") && (
                           <span className="text-blue-600 hover:text-blue-800 transition duration-300 cursor-pointer">
                             <SquarePen
                               size={20}
@@ -93,7 +91,7 @@ const Permission = () => {
                               }}
                             />
                           </span>
-                        {/* )} */}
+                        )}
                         {hasPermission("Delete permission") && (
                           <span className="text-red-600 hover:text-red-800 transition duration-300 cursor-pointer">
                             <Trash2

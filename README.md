@@ -1,30 +1,65 @@
-# authXpress
+# AuthXpress
 
-AuthXpress is a robust and secure authentication system designed for modern web applications, with robust role-based access control (RBAC), ensuring secure and seamless user management. It offers essential features like user registration, login, forgot password, password reset, and refresh token management. With persistent login capabilities, users remain seamlessly authenticated even after refreshing the page. Users can also assign roles and permissions to users.
+**AuthXpress** is a robust and secure authentication system designed for modern web applications, featuring powerful **Role-Based Access Control (RBAC)** for secure and flexible user management.
 
-Built with a powerful Express.js backend and an intuitive React.js frontend, AuthXpress ensures a smooth user experience while prioritizing data security. Featuring hashed passwords, token-based authentication, and secure storage practices, it’s a production-ready solution that integrates seamlessly into your application.
+It offers essential features such as:
 
-## Why Token-Based Authentication
+- User registration and login  
+- Forgot password and password reset  
+- Refresh token and persistent login  
+- Google login and multi-factor authentication  
+- Protected routes and feature-level restrictions based on user roles and permissions (backend + frontend)
 
-1. It is Stateless, which makes it hightly scalable because it provides Cross-Domain support
-2. Token is stored on the client but it gets verified on the server
+Built with a powerful **Express.js** backend and an intuitive **React.js** frontend, AuthXpress ensures a seamless user experience while prioritizing data security. Featuring hashed passwords, token-based authentication, and secure storage practices, it’s a **production-ready** solution that integrates easily into modern web applications.
 
-## Features
 
-- **User Authentication**
-  - Login, Signup, Forgot Password, and Reset Password functionality.
-- **Reset Password Via Email**
+## 🔐 Why Token-Based Authentication?
 
-  - Request for Password reset and get a reset link in your registered email
-  - Token with 1 hour validity
+1. **Stateless** — Scalable and supports cross-domain requests (CORS).
+2. **Secure** — Token is stored on the client but always verified on the server.
 
-- **Responsive Design**
-  - Fully responsive UI built with CSS and TailwindCSS for an optimized user experience on all devices.
 
-## Technologies Used
+## ✨ Features
 
-- **Frontend:** React.js, CSS, TailwindCSS
-- **Backend:** Express.js, MogoDB, JSON Web Token, NodeMailer
+### User Authentication
+- Signup and login with secure credential handling
+- Multi-factor authentication (e.g. Google Authenticator)
+
+### Reset Password via Email
+- Request a reset link via registered email
+- Reset token is valid for 1 hour
+
+### Role-Based Access Control (RBAC)
+- Create roles and assign permissions
+- Restrict access to routes and features based on roles/permissions
+- Protect both backend APIs and frontend UI components dynamically
+
+### Persistent Login
+- Seamless user sessions even after refreshing the page
+- Access and refresh token flow for secure re-authentication
+
+### OAuth Login
+- Google login integration for quick and secure authentication
+
+
+## 🛡️ Security Highlights
+
+- Passwords hashed using bcrypt
+- JWT-based authentication
+- Route protection and role-based authorization
+- Secure storage and token handling best practices
+
+
+## 📁 Tech Stack
+
+- **Backend**: Express.js, Mongoose, JWT, bcrypt, NodeMailer
+- **Frontend**: React.js, React Query, Axios, Formik, Yup, TailwindCSS
+
+
+## 🚀 Ready to Use
+
+AuthXpress is ideal for any modern web app that needs secure, scalable authentication and access control.
+
 
 ## Installation
 
@@ -44,10 +79,6 @@ npm install
 5. Start the development frontend application: `npm run develop` in the backend folder
 6. Open the app in your browser: `http://localhost:3000`
 7. Ensure backend test passes by running: `npm test` in the backend folder
-
-## Future Enhancements
-
-- Implement OAuth features like Google Loging, GitHub Login, etc
 
 ### Contributing
 

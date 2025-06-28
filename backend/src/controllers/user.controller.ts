@@ -42,7 +42,7 @@ export const updateUserController = async (
       id,
       { name, email, role },
       { new: true }
-    ).populate("role");
+    );
 
     res.status(200).json({ status: "success", user });
   } catch (err: any) {

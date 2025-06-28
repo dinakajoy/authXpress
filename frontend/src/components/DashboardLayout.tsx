@@ -21,9 +21,9 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <nav className="w-64 bg-gray-800 text-white p-6 flex flex-col h-screen">
+      <nav className="w-64 bg-gray-800 text-white p-6 flex flex-col">
         <h1 className="text-2xl font-bold">Dashboard</h1>
 
         {/* Navigation Links - Grow to push logout down */}
@@ -54,7 +54,7 @@ const DashboardLayout: React.FC = () => {
           </li>
         </ul>
 
-        {/* Logout Button - Sticks to Bottom */}
+        {/* Logout Button */}
         <button
           onClick={handleLogout}
           className="bg-red-600 text-white px-4 py-2 rounded"
@@ -63,8 +63,8 @@ const DashboardLayout: React.FC = () => {
         </button>
       </nav>
 
-      {/* Main Content (Dynamic Content Will Be Rendered Here) */}
-      <div className="flex-1 bg-gray-100">
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto bg-gray-100">
         <Outlet />
       </div>
     </div>

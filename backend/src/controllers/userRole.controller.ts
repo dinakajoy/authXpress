@@ -22,7 +22,7 @@ export const getUserRolesController = async (
   next: NextFunction
 ) => {
   try {
-    const userRoles = await UserRole.find({});
+    const userRoles = await UserRole.find({}).populate("permission").lean();
 
     res.status(200).json({ status: "success", userRoles });
   } catch (err: any) {
@@ -37,7 +37,7 @@ export const getUserRoleController = async (
 ) => {
   const { id } = req.params;
   try {
-    const role = await UserRole.findById({ id });
+    const role = await UserRole.findById({ id }).populate("permission").lean();
 
     res.status(200).json({ status: "success", role });
   } catch (err: any) {

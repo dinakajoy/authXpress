@@ -38,7 +38,6 @@ const isAuthorized =
           return next(new (UnauthorizedUserException as any)());
         }
 
-        req.body.email = userEmail;
         return next();
       } else {
         return next(new (UnauthorizedUserException as any)());
