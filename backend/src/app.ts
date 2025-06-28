@@ -18,22 +18,22 @@ import {
   findUserByEmail,
   createUser,
   updateUser,
+  findUserById,
 } from "./services/user.service";
-import { corsOptions } from "./utils";
+import { corsOptions, logger } from "./utils";
 import { signAccessToken } from "./utils/jwtUtils";
 import UserModel from "./models/user.model";
 import { IUser } from "./interfaces/user.interfaces";
 
 const clientID = config.get("googleConfig.clientID") as string;
 const clientSecret = config.get("googleConfig.clientSecret") as string;
-const callbackURL = config.get("googleConfig.callbackURL") as string;
 
 const app: Express = express();
 
 // Middleware
 app.use(
   acountLimiter,
-  helmet(),
+  // helmet(),
   compression(),
   cors<Request>(corsOptions),
   express.json(),
@@ -41,26 +41,13 @@ app.use(
 );
 
 // Google login
-app.use(
-  session({
-    secret: config.get("environment.secret"),
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-    },
-  })
-);
 passport.initialize();
-app.use(passport.session());
 passport.use(
   new GoogleStrategy(
     {
       clientID,
       clientSecret,
-      callbackURL,
+      callbackURL: "/auth/google/callback",
     },
     async (
       _accessToken: string,
@@ -99,129 +86,135 @@ passport.use(
         );
         return done(null, { ...user, token: accessToken });
       } catch (err) {
-        console.error("Error in GoogleStrategy:", err);
+        logger.error("Error in GoogleStrategy:", err);
         return done(err);
       }
     }
   )
 );
-passport.serializeUser((user: any, done) => {
-  return done(null, user._id.toString());
-});
-passport.deserializeUser(async (id: string, done) => {
-  try {
-    const user = await UserModel.findById(id).exec();
-    if (!user) return done(null, false);
-    return done(null, user);
-  } catch (err) {
-    return done(err);
-  }
-});
-// app.get(
-//   "/auth/google/popup",
-//   passport.authenticate("google", {
-//     scope: ["profile", "email"],
-//     session: false,
-//   })
-// );
 app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  "/auth/google/popup",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })
 );
 app.get(
   "/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: `${config.get("environment.clientUrl")}`,
-  }),
+  passport.authenticate("google", { session: false }),
   (req, res) => {
-    res.redirect(`${config.get("environment.clientUrl")}/dashboard`);
+    const user = req.user as IUser | null;
+
+    if (!user || !user.token) {
+      res.json({ success: false, message: "User not found or token missing" });
+      return;
+    }
+
+    const html = `
+          <script>
+        if (window.opener) {
+          window.opener.postMessage({ user: "${user}" }, "${config.get(
+      "environment.clientUrl"
+    )}");
+          window.close();
+        } else {
+        console.log("No opener window found.");
+      }
+      </script>
+    `;
+
+    res.send(html);
+    return;
   }
 );
-// app.get(
-//   "/auth/google/callback",
-//   passport.authenticate("google", { session: false }),
-//   (req, res) => {
-//     const user = req.user as any;
-//     // const user = req.user as IUser | null;
-//     if (!user) {
-//       console.error("Error in GoogleStrategy =========");
-//       res.send(`<script>window.close();</script>`);
-//       return;
-//     }
-
-//     const html = `
-//         <script>
-//         if (window.opener) {
-//           window.opener.postMessage({ token: "${user.token}" }, "${config.get(
-//       "environment.clientUrl"
-//     )}");
-//           window.close();
-//         } else {
-//         console.log("No opener window found.");
-//       }
-//       </script>
-//     `;
-
-//     res.send(html);
-//     return;
-//   }
-// );
 
 // MFA
 app.post("/2fa/setup", async (req, res) => {
-  const { email } = req.body;
+  const { id } = req.body;
 
   const secret = speakeasy.generateSecret({
-    name: `AuthXpress (${email})`,
+    name: `AuthXpress (${id})`,
   });
 
+  let user = await findUserById(id, () => {});
+  if (!user || !user.token) {
+    res.json({ success: false, message: "User not found!" });
+    return;
+  }
   // Save this secret.base32 to the user's profile in DB
-  await UserModel.updateOne({ email }, { twoFASecret: secret.base32 });
+  await updateUser(
+    user?._id as string,
+    { twoFASecret: secret.base32 },
+    () => {}
+  );
 
   if (secret.otpauth_url) {
     const qr = await qrcode.toDataURL(secret.otpauth_url);
 
-    res.json({ qr, secret: secret.base32 });
+    res.json({ qr });
     return;
   }
   res.status(500).json({ error: "Failed to generate QR code" });
 });
-// app.post("/api/2fa/verify", async (req, res) => {
-//   const { email, token } = req.body;
+app.post("/2fa/verify", async (req, res) => {
+  const { id, token } = req.body;
+  const user = await findUserById(id, () => {});
 
-//   const user = await UserModel.findOne({ email });
-//   if(!user) return;
+  if (!user || !user.twoFASecret) {
+    res.status(404).json({
+      success: false,
+      message: "User not found or 2FA secret missing",
+    });
+    return;
+  }
 
-//   const isValid = speakeasy.totp.verify({
-//     secret: user.twoFASecret,
-//     encoding: "base32",
-//     token,
-//     window: 1,
-//   });
+  const currentCode = speakeasy.totp({
+    secret: user.twoFASecret,
+    encoding: "base32",
+  });
 
-//   if (!isValid) {
-//     res.status(401).json({ message: "Invalid 2FA token" });
-//     return;
-//   }
+  const isValid = speakeasy.totp.verify({
+    secret: user.twoFASecret,
+    encoding: "base32",
+    token,
+    window: 2,
+  });
 
-//   const accessTokenData = {
-//     email: user?.email || "",
-//     isRefreshToken: false,
-//   };
-//   const refreshTokenData = {
-//     email: user?.email || "",
-//     isRefreshToken: true,
-//   };
+  if (!isValid) {
+    res.status(401).json({ success: false, message: "Invalid token" });
+    return;
+  }
 
-//   const accessToken = (await signAccessToken(accessTokenData, () => {})) || "";
-//   const refreshToken =
-//     (await signAccessToken(refreshTokenData, () => {})) || "";
-//   await updateUser(user?._id as string, { token: refreshToken }, () => {});
-//   res.json({ token: accessToken });
-//   return;
-// });
+  // Mark user as 2FA-enabled in DB
+  await updateUser(
+    user?._id as string,
+    { twoFAEnabled: true },
+    () => {}
+  );
 
-// Routes
+  res.json({ success: true });
+  return;
+});
+app.post("/2fa/disable", async (req, res) => {
+  const { id } = req.body;
+  const user = await findUserById(id, () => {});
+
+  if (!user) {
+    res.status(404).json({ success: false, message: "User not found" });
+    return;
+  }
+
+  // Mark user as not 2FA-enabled in DB
+  await updateUser(
+    user?._id as string,
+    { twoFAEnabled: false, twoFASecret: null },
+    () => {}
+  );
+
+  res.json({ success: true, message: "2FA disabled" });
+  return;
+});
+
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
   res.send({ message: "Welcome 🐻" });
 });

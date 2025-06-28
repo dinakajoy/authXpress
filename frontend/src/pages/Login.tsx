@@ -1,31 +1,44 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { IUser, LoginResponse } from "../interfaces/user";
-import Setup2FAModal from "../components/Setup2FA";
+import { useUser } from "../context/UserContext";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { user, setUser } = useUser();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSumbitting, setIsSumbitting] = useState<boolean>(false);
-  const [user, setUser] = useState<IUser | null>(null);
-  const [code, setCode] = useState("");
   const [show2FAInput, setShow2FAInput] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [code, setCode] = useState("");
+  const [verified, setVerified] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const submit2FACode = async () => {
-    const res = await axios.post(`${process.env.REACT_APP_API}/2fa/verify`, {
-      email,
-      token: code,
-    });
+  const verify2FA = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.post(`${process.env.REACT_APP_API}/2fa/verify`, {
+        id: user?._id,
+        token: code,
+      });
 
-    localStorage.setItem("token", res.data.token);
-    navigate("/dashboard");
+      if (res.data.success) {
+        setVerified(true);
+        setTimeout(() => navigate("/dashboard"), 1500);
+      } else {
+        setError("Invalid code. Try again.");
+      }
+    } catch (err) {
+      setError("Invalid or expired code.");
+    } finally {
+      setLoading(false);
+      setIsSumbitting(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -40,17 +53,14 @@ const Login: React.FC = () => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (data) {
+      if (data.payload && data.payload.token) {
+        setUser(data.payload);
+        localStorage.setItem("token", data.payload.token);
+
         if (data.payload.twoFAEnabled) {
           setShow2FAInput(true);
-          setUser(data.payload);
-          return;
         } else {
-          // Save the token in local storage for authentication
-          setShow2FAModal(true);
-          setUser(data.payload);
-
-          // return navigate("/dashboard");
+          return navigate("/dashboard");
         }
       }
     } catch (error: any) {
@@ -65,35 +75,32 @@ const Login: React.FC = () => {
     }
   };
 
-  // const handleGoogleLogin = () => {
-  //   setError(null);
-  //   const authWindow = window.open(
-  //     `${process.env.REACT_APP_API}/auth/google/popup`,
-  //     "_blank",
-  //     "width=500,height=600"
-  //   );
-
-  //   const messageHandler = (event: MessageEvent) => {
-  //     if (event.origin !== process.env.NEXT_PUBLIC_SERVER_URL) return;
-  //     console.log("===============", event);
-
-  //     const { token } = event.data;
-  //     if (token) {
-  //       console.log("Received token from popup:", token);
-  //       localStorage.setItem("token", token);
-  //       return navigate("/dashboard");
-  //     }
-  //   };
-
-  //   window.addEventListener("message", messageHandler, false);
-
-  //   // cleanup
-  //   const cleanup = () => window.removeEventListener("message", messageHandler);
-  //   authWindow?.addEventListener("beforeunload", cleanup);
-  // };
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API}/auth/google`;
+    setError(null);
+    const authWindow = window.open(
+      `${process.env.REACT_APP_API}/auth/google/popup`,
+      "_blank",
+      "width=500,height=600"
+    );
+
+    const messageHandler = (event: MessageEvent) => {
+      if (event.origin !== process.env.REACT_APP_API) return;
+
+      const { user } = event.data;
+      if (user) {
+        localStorage.setItem("token", user.token);
+        setUser(user);
+        return navigate("/dashboard");
+      }
+    };
+
+    window.addEventListener("message", messageHandler, false);
+
+    // cleanup
+    const cleanup = () => window.removeEventListener("message", messageHandler);
+    authWindow?.addEventListener("beforeunload", cleanup);
   };
+
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <form className="bg-white p-6 rounded shadow-md w-80 space-y-4">
@@ -138,18 +145,46 @@ const Login: React.FC = () => {
             "Login"
           )}
         </button>
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="flex items-center justify-center gap-2 w-full max-w-xs border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 px-4 py-2 rounded shadow-sm transition"
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt="Google"
-            className="w-5 h-5"
-          />
-          Continue with Google
-        </button>
+        {user?._id && show2FAInput && (
+          <div className="my-4">
+            <label className="block mb-1 text-sm font-medium">
+              Enter the 6-digit code from your app:
+            </label>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123456"
+              maxLength={6}
+              className="border rounded px-3 py-2 w-full mb-2"
+            />
+            <button
+              onClick={verify2FA}
+              disabled={loading || code.length !== 6}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 w-full"
+            >
+              {loading ? "Verifying..." : "Verify & Enable 2FA"}
+            </button>
+            {verified && (
+              <p className="text-green-600 font-medium mt-3">
+                ✅ 2FA successfully verified!
+              </p>
+            )}
+          </div>
+        )}
+        {!show2FAInput && (
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex items-center justify-center gap-2 w-full max-w-xs border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 px-4 py-2 rounded shadow-sm transition"
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google"
+              className="w-5 h-5"
+            />
+            Continue with Google
+          </button>
+        )}
         <div className="text-center text-sm mt-4">
           <p>
             Don't have an account?{" "}
@@ -170,12 +205,6 @@ const Login: React.FC = () => {
           </p>
         </div>
       </form>
-      {user && show2FAModal && (
-        <Setup2FAModal
-          email={user.email}
-          onClose={() => setShow2FAModal(false)}
-        />
-      )}
     </div>
   );
 };

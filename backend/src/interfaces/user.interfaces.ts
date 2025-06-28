@@ -4,4 +4,7 @@ export interface IUser {
   email: string;
   password: string;
   token?: string;
+  role?: string;
+  twoFAEnabled?: boolean;
+  twoFASecret?: string;
 }

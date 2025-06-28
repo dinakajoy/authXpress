@@ -8,7 +8,10 @@ import {
   WrongCredentialsException,
   CustomException,
 } from "../utils/errors";
-import { IUserRefreshToken } from "../interfaces/token.interface";
+import {
+  IUserPartialUpdate,
+  IUserRefreshToken,
+} from "../interfaces/token.interface";
 
 export const createUser = async (data: IUser, next: NextFunction) => {
   try {
@@ -107,7 +110,7 @@ export const findUserById = async (id: string, next: NextFunction) => {
 
 export const updateUser = async (
   id: string,
-  data: IUser | IUserRefreshToken,
+  data: IUser | IUserRefreshToken | IUserPartialUpdate,
   next: NextFunction
 ) => {
   try {

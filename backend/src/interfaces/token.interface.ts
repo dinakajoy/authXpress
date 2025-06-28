@@ -11,3 +11,7 @@ export interface IVerifyToken {
 export interface IUserRefreshToken {
   token?: string;
 }
+
+export interface IUserPartialUpdate {
+  [key: string]: any;
+}
