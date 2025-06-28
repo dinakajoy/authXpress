@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-interface IUserSchema extends Document {
+export interface IUserSchema extends Document {
   name: string;
   email: string;
   role?: string;
@@ -14,5 +14,3 @@ interface IUserSchema extends Document {
   validatePassword(password: string): Promise<boolean>;
   hashPasswordd(password: string): Promise<string>;
 }
-
-export default IUserSchema;

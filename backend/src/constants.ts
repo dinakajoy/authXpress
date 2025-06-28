@@ -3,8 +3,6 @@ export const EMAIL_ADDRESS_REGEX = new RegExp(
 );
 
 export enum PermissionGroupType {
-  Profile = "profile",
-  UserProfile = "userProfile",
   User = "user",
   UserRole = "userRole",
   Permissions = "permissions",

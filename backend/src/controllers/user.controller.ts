@@ -7,7 +7,7 @@ export const getUsersController = async (
   next: NextFunction
 ) => {
   try {
-    const users = await User.find({});
+    const users = await User.find({}).populate("role");
 
     res.status(200).json({ status: "success", users });
   } catch (err: any) {
@@ -22,7 +22,7 @@ export const getUserController = async (
 ) => {
   const { id } = req.params;
   try {
-    const role = await User.findById({ id });
+    const role = await User.findById({ id }).populate("role");
 
     res.status(200).json({ status: "success", role });
   } catch (err: any) {
@@ -42,7 +42,7 @@ export const updateUserController = async (
       id,
       { name, email, role },
       { new: true }
-    );
+    ).populate("role");
 
     res.status(200).json({ status: "success", user });
   } catch (err: any) {

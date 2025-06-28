@@ -10,10 +10,14 @@ export enum PermissionGroupType {
   Permissions = "permissions",
 }
 
-export const PermissionGroup = [{
-  profile: "Profile",
-  userProfile: "User Profile",
+export const PermissionGroup = {
   user: "User",
   userRole: "User Role",
   permissions: "Permissions",
+};
+
+export const PermissionType = [{
+  can_read: "Can read",
+  can_write: "Can write",
+  can_delete: "Can delete",
 }]

@@ -14,7 +14,10 @@ const Dashboard = () => {
   const handleLogout = async () => {
     if (user) {
       await axios.get(`${process.env.REACT_APP_API}/auth/logout/${user._id}`, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
       window.localStorage.removeItem("token");
       return navigate("/");
@@ -24,9 +27,18 @@ const Dashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API}/2fa/disable`, {
-        id: user?._id,
-      });
+      const res = await axios.post(
+        `${process.env.REACT_APP_API}/2fa/disable`,
+        {
+          id: user?._id,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       if (res.data.success) {
         if (user) {
           setUser({ ...user, twoFAEnabled: false });

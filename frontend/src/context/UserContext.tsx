@@ -6,13 +6,14 @@ import {
   useEffect,
 } from "react";
 import axios from "axios";
-import { IUser } from "../interfaces/user";
+import { IUserWithRole } from "../interfaces/user";
 import PageLoader from "../components/PageLoader";
 
 interface UserContextType {
-  user: IUser | null;
-  setUser: (user: IUser | null) => void;
+  user: IUserWithRole | null;
+  setUser: (user: IUserWithRole | null) => void;
   isAuthenticated: boolean;
+  userPermissions: string[];
 }
 
 // Create the context
@@ -20,7 +21,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 // Provider component
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<IUser | null>(null);
+  const [user, setUser] = useState<IUserWithRole | null>(null);
+  const [permissionsMap, setPermissionsMap] = useState<Record<string, string>>(
+    {}
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +36,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
       // Verify the token by making an API call
       try {
-        const res = await axios.get(
+        const currentUserRes = await axios.get(
           `${process.env.REACT_APP_API}/auth/current-user`,
           {
             headers: {
@@ -40,8 +44,22 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             },
           }
         );
+        const allPermissionsRes = await axios.get(
+          `${process.env.REACT_APP_API}/permissions`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const allPermissions = allPermissionsRes.data.permissions;
+        const map: Record<string, string> = {};
+        allPermissions.forEach((perm: any) => {
+          map[perm._id] = perm.name;
+        });
 
-        setUser(res.data);
+        setUser(currentUserRes.data);
+        setPermissionsMap(map);
       } catch (err) {
         localStorage.removeItem("token");
         setUser(null);
@@ -54,11 +72,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   if (loading) return <PageLoader />;
+  const resolvedPermissions = user?.role?.permission.map((id) => permissionsMap[id]) || [];
 
   const value: UserContextType = {
     user,
     setUser,
     isAuthenticated: !!user,
+    userPermissions: resolvedPermissions,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

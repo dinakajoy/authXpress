@@ -35,7 +35,7 @@ export const createUserRoleValidation = () => [
 export const validate = (req: Request, res: Response, next: NextFunction) => {
   const errors: any = validationResult(req);
   if (errors.isEmpty()) {
-    next();
+    return next();
   }
   res.status(422).json({
     status: "error",

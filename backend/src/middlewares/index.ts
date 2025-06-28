@@ -1,4 +1,5 @@
-import acountLimiter from "./rateLimiter";
+import routeLimiter from "./rateLimiter";
 import isAuthenticated from "./isAuthenticated";
+import isAuthorized from "./isAuthorized";
 
-export { acountLimiter, isAuthenticated };
+export { routeLimiter, isAuthenticated, isAuthorized };

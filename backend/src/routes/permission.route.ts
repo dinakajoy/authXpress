@@ -10,30 +10,30 @@ import {
   updatePermissionController,
   deletePermissionController,
 } from "../controllers/permission.controller";
-import rateLimiter from "../utils/rate-limiter";
+import { isAuthenticated, isAuthorized } from "../middlewares";
 
 const router = express.Router();
 
 router.post(
   "/",
-  rateLimiter,
+  isAuthorized(["Admin"]),
   createPermissionValidation(),
   validate,
   createPermissionController
 );
 
-router.get("/", rateLimiter, getPermissionsController);
+router.get("/", isAuthenticated, getPermissionsController);
 
-router.get("/:id", rateLimiter, getPermissionController);
+router.get("/:id", isAuthenticated, getPermissionController);
 
 router.put(
   "/:id",
-  rateLimiter,
+  isAuthorized(["Admin"]),
   createPermissionValidation(),
   validate,
   updatePermissionController
 );
 
-router.delete("/:id", rateLimiter, deletePermissionController);
+router.delete("/:id", isAuthorized(["Admin"]), deletePermissionController);
 
 export default router;

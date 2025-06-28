@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
-import { IUser, LoginResponse } from "../interfaces/user";
+import { LoginResponse } from "../interfaces/user";
 import { useUser } from "../context/UserContext";
 
 const Login: React.FC = () => {

@@ -10,7 +10,10 @@ const DashboardLayout: React.FC = () => {
   const handleLogout = async () => {
     if (user) {
       await axios.get(`${process.env.REACT_APP_API}/auth/logout/${user._id}`, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
       window.localStorage.removeItem("token");
       return navigate("/");
@@ -61,7 +64,7 @@ const DashboardLayout: React.FC = () => {
       </nav>
 
       {/* Main Content (Dynamic Content Will Be Rendered Here) */}
-      <div className="flex-1 bg-gray-100 p-6">
+      <div className="flex-1 bg-gray-100">
         <Outlet />
       </div>
     </div>

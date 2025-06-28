@@ -1,12 +1,15 @@
 import mongoose, { Schema, Model } from "mongoose";
 import bcrypt from "bcrypt";
 import config from "config";
-import IUserSchema from "../schemas/user.schema";
+import { IUserSchema } from "../schemas/user.schema";
 
 const UserSchema: Schema<IUserSchema> = new Schema<IUserSchema>({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  role: { type: String },
+  role: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "UserRole",
+  },
   password: { type: String },
   token: { type: String },
   resetToken: { type: String },

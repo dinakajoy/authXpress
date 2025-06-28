@@ -15,18 +15,18 @@ import {
   signupValidation,
   validate,
 } from "../validations/auth.validation";
-import { acountLimiter, isAuthenticated } from "../middlewares";
+import { routeLimiter, isAuthenticated } from "../middlewares";
 
 const router = Router();
 
-router.post("/register", signupValidation(), validate, register);
+router.post("/register", routeLimiter, signupValidation(), validate, register);
 
-router.post("/login", loginValidation(), validate, login);
+router.post("/login", routeLimiter, loginValidation(), validate, login);
 
 // Forgot Password route
 router.post(
   "/forgot-password",
-  acountLimiter,
+  routeLimiter,
   forgetPasswordValidation(),
   validate,
   forgotPasswordController
@@ -35,15 +35,21 @@ router.post(
 // Reset Password route
 router.put(
   "/reset-password",
+  routeLimiter,
   resetPasswordValidation(),
   validate,
   resetPasswordController
 );
 
-router.get("/current-user", isAuthenticated, getCurrentUserController);
+router.get(
+  "/current-user",
+  routeLimiter,
+  isAuthenticated,
+  getCurrentUserController
+);
 
 // Refresh Token routelpll
-router.get("/refresh-token", refreshTokenController);
+router.get("/refresh-token", routeLimiter, refreshTokenController);
 
 // Logout route
 router.get("/logout/:id", logoutController);

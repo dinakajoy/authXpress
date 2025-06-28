@@ -18,9 +18,17 @@ const Setup2FAModal: React.FC<Setup2FAModalProps> = ({ id, onClose }) => {
   useEffect(() => {
     const setup2FA = async () => {
       try {
-        const res = await axios.post(`${process.env.REACT_APP_API}/2fa/setup`, {
-          id,
-        });
+        const res = await axios.post(
+          `${process.env.REACT_APP_API}/2fa/setup`,
+          {
+            id,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         setQrCode(res.data.qr);
       } catch (err) {
         console.error("2FA setup failed", err);
@@ -32,10 +40,18 @@ const Setup2FAModal: React.FC<Setup2FAModalProps> = ({ id, onClose }) => {
   const verify2FA = async () => {
     try {
       setLoading(true);
-      const res = await axios.post(`${process.env.REACT_APP_API}/2fa/verify`, {
-        id,
-        token: code,
-      });
+      const res = await axios.post(
+        `${process.env.REACT_APP_API}/2fa/verify`,
+        {
+          id,
+          token: code,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
       if (res.data.success) {
         setVerified(true);

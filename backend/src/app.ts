@@ -13,7 +13,7 @@ import authRoutes from "./routes/auth.route";
 import userRoleRoute from "./routes/userRole.route";
 import permissionRoute from "./routes/permission.route";
 import userRoute from "./routes/user.route";
-import { acountLimiter } from "./middlewares";
+import accountLimiter from "./utils/rate-limiter";
 import {
   findUserByEmail,
   createUser,
@@ -22,8 +22,9 @@ import {
 } from "./services/user.service";
 import { corsOptions, logger } from "./utils";
 import { signAccessToken } from "./utils/jwtUtils";
+import { IUserWithRole } from "./interfaces/user.interfaces";
 import UserModel from "./models/user.model";
-import { IUser } from "./interfaces/user.interfaces";
+import { isAuthenticated } from "./middlewares";
 
 const clientID = config.get("googleConfig.clientID") as string;
 const clientSecret = config.get("googleConfig.clientSecret") as string;
@@ -32,7 +33,7 @@ const app: Express = express();
 
 // Middleware
 app.use(
-  acountLimiter,
+  accountLimiter,
   // helmet(),
   compression(),
   cors<Request>(corsOptions),
@@ -49,22 +50,17 @@ passport.use(
       clientSecret,
       callbackURL: "/auth/google/callback",
     },
-    async (
-      _accessToken: string,
-      _refreshToken: string,
-      profile: Profile,
-      done: (error: any, user?: any) => void
-    ) => {
+    async (_accessToken, _refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
         const name = profile.displayName;
 
         if (!email) return done(new Error("No email provided"));
 
-        let user = await findUserByEmail(email, () => {});
+        let user = await findUserByEmail(email);
 
         if (!user) {
-          user = await createUser({ name, email, password: "" }, () => {});
+          user = await createUser({ name, email, password: "" });
         }
         const accessTokenData = {
           email: user?.email || "",
@@ -75,16 +71,14 @@ passport.use(
           isRefreshToken: true,
         };
 
-        const accessToken =
-          (await signAccessToken(accessTokenData, () => {})) || "";
-        const refreshToken =
-          (await signAccessToken(refreshTokenData, () => {})) || "";
-        await updateUser(
-          user?._id as string,
-          { token: refreshToken },
-          () => {}
-        );
-        return done(null, { ...user, token: accessToken });
+        const accessToken = (await signAccessToken(accessTokenData)) || "";
+        const refreshToken = (await signAccessToken(refreshTokenData)) || "";
+        await updateUser(user?._id as string, { token: refreshToken });
+        const userWithRole = await UserModel.findById(user._id)
+          .select("-password")
+          .populate("role")
+          .lean();
+        return done(null, { ...userWithRole, token: accessToken });
       } catch (err) {
         logger.error("Error in GoogleStrategy:", err);
         return done(err);
@@ -103,7 +97,7 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", { session: false }),
   (req, res) => {
-    const user = req.user as IUser | null;
+    const user = req.user as IUserWithRole | null;
 
     if (!user || !user.token) {
       res.json({ success: false, message: "User not found or token missing" });
@@ -136,17 +130,13 @@ app.post("/2fa/setup", async (req, res) => {
     name: `AuthXpress (${id})`,
   });
 
-  let user = await findUserById(id, () => {});
+  let user = await findUserById(id);
   if (!user || !user.token) {
     res.json({ success: false, message: "User not found!" });
     return;
   }
   // Save this secret.base32 to the user's profile in DB
-  await updateUser(
-    user?._id as string,
-    { twoFASecret: secret.base32 },
-    () => {}
-  );
+  await updateUser(user?._id as string, { twoFASecret: secret.base32 });
 
   if (secret.otpauth_url) {
     const qr = await qrcode.toDataURL(secret.otpauth_url);
@@ -158,7 +148,7 @@ app.post("/2fa/setup", async (req, res) => {
 });
 app.post("/2fa/verify", async (req, res) => {
   const { id, token } = req.body;
-  const user = await findUserById(id, () => {});
+  const user = await findUserById(id);
 
   if (!user || !user.twoFASecret) {
     res.status(404).json({
@@ -186,18 +176,14 @@ app.post("/2fa/verify", async (req, res) => {
   }
 
   // Mark user as 2FA-enabled in DB
-  await updateUser(
-    user?._id as string,
-    { twoFAEnabled: true },
-    () => {}
-  );
+  await updateUser(user?._id as string, { twoFAEnabled: true });
 
   res.json({ success: true });
   return;
 });
-app.post("/2fa/disable", async (req, res) => {
+app.post("/2fa/disable", isAuthenticated, async (req, res) => {
   const { id } = req.body;
-  const user = await findUserById(id, () => {});
+  const user = await findUserById(id);
 
   if (!user) {
     res.status(404).json({ success: false, message: "User not found" });
@@ -205,11 +191,10 @@ app.post("/2fa/disable", async (req, res) => {
   }
 
   // Mark user as not 2FA-enabled in DB
-  await updateUser(
-    user?._id as string,
-    { twoFAEnabled: false, twoFASecret: null },
-    () => {}
-  );
+  await updateUser(user?._id as string, {
+    twoFAEnabled: false,
+    twoFASecret: null,
+  });
 
   res.json({ success: true, message: "2FA disabled" });
   return;

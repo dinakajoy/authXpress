@@ -1,4 +1,3 @@
-import { NextFunction } from "express";
 import config from "config";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv-safe";
@@ -11,10 +10,9 @@ dotenv.config();
 const accessTokenSecret = config.get("jwt.accessTokenSecret") as string;
 const refreshTokenSecret = config.get("jwt.refreshTokenSecret") as string;
 
-export const signPasswordAccessToken = (
-  payload: { email: string },
-  next: NextFunction
-): Promise<string | undefined> =>
+export const signPasswordAccessToken = (payload: {
+  email: string;
+}): Promise<string | undefined> =>
   new Promise((resolve, _) => {
     jwt.sign(
       { payload },
@@ -23,7 +21,7 @@ export const signPasswordAccessToken = (
       (err, token) => {
         if (err) {
           logger.error(`signAccessToken Error: ${err.message}`);
-          next(new (CustomException as any)(500, "Unsuccessful operation"));
+          throw new (CustomException as any)(500, "Unsuccessful operation");
         }
         resolve(token);
       }
@@ -31,18 +29,17 @@ export const signPasswordAccessToken = (
   });
 
 export const signAccessToken = (
-  payload: ICreateToken,
-  next: NextFunction
+  payload: ICreateToken
 ): Promise<string | undefined> =>
   new Promise((resolve, _) => {
     jwt.sign(
       { payload },
       payload.isRefreshToken ? refreshTokenSecret : accessTokenSecret,
-      { expiresIn: payload.isRefreshToken ? "7d" : "15m" },
+      { expiresIn: payload.isRefreshToken ? "7d" : "1h" },
       (err, token) => {
         if (err) {
           logger.error(`signAccessToken Error: ${err.message}`);
-          next(new (CustomException as any)(500, "Unsuccessful operation"));
+          throw new (CustomException as any)(500, "Unsuccessful operation");
         }
         resolve(token);
       }
@@ -50,8 +47,7 @@ export const signAccessToken = (
   });
 
 export const verifyAccessToken = (
-  tokenData: IVerifyToken,
-  next: NextFunction
+  tokenData: IVerifyToken
 ): Promise<JwtPayload | undefined> =>
   new Promise((resolve, _) => {
     try {
@@ -62,6 +58,6 @@ export const verifyAccessToken = (
       resolve(jwtRespone);
     } catch (err: any) {
       logger.error(`verifyAccessToken Error: ${err.message}`);
-      next(new (CustomException as any)(500, err.message));
+      throw new (CustomException as any)(500, err.message);
     }
   });

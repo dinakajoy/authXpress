@@ -6,7 +6,6 @@ import {
   createUser,
   findUserByEmail,
   findUserById,
-  isUser,
   updatePassword,
   updateUser,
   validateUser,
@@ -18,14 +17,9 @@ import {
   WrongCredentialsException,
 } from "../utils/errors";
 import transporter from "../utils/emailSender";
-import {
-  signAccessToken,
-  signPasswordAccessToken,
-  verifyAccessToken,
-} from "../utils/jwtUtils";
+import { signAccessToken, verifyAccessToken } from "../utils/jwtUtils";
 import { ICreateToken } from "../interfaces/token.interface";
 import { logger } from "../utils";
-import { IUser } from "../interfaces/user.interfaces";
 
 export const register = async (
   req: Request,
@@ -36,13 +30,13 @@ export const register = async (
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await findUserByEmail(email, next);
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return next(new (AlreadyExistingUserException as any)());
     }
 
     // Create new user
-    await createUser({ name, email, password }, next);
+    await createUser({ name, email, password });
     res.status(201).json({ message: "User registered successfully" });
     return;
   } catch (error: any) {
@@ -58,13 +52,13 @@ export const login = async (
 ): Promise<void> => {
   try {
     const { email, password } = req.body;
-    const userIsValid = await validateUser(email, password, next);
+    const userIsValid = await validateUser(email, password);
 
     if (!userIsValid) {
       return next(new (WrongCredentialsException as any)());
     }
 
-    const user = await findUserByEmail(email, next);
+    const user = await findUserByEmail(email);
     if (!user) {
       return next(new (WrongCredentialsException as any)());
     }
@@ -77,13 +71,17 @@ export const login = async (
       isRefreshToken: true,
     };
 
-    const accessToken = (await signAccessToken(accessTokenData, next)) || "";
-    const refreshToken = (await signAccessToken(refreshTokenData, next)) || "";
+    const accessToken = (await signAccessToken(accessTokenData)) || "";
+    const refreshToken = (await signAccessToken(refreshTokenData)) || "";
 
-    await updateUser(user._id as string, { token: refreshToken }, next);
+    await updateUser(user._id as string, { token: refreshToken });
+    const userWithRole = await UserModel.findById(user._id)
+      .select("-password")
+      .populate("role")
+      .lean();
     res.status(200).json({
       status: "success",
-      payload: { ...user, token: accessToken },
+      payload: { ...userWithRole, token: accessToken },
     });
   } catch (error: any) {
     logger.error(`Login Controller Error: ${error.message}`);
@@ -97,7 +95,7 @@ export const forgotPasswordController = async (
   next: NextFunction
 ) => {
   const { email } = req.body;
-  const user = await findUserByEmail(email, next);
+  const user = await findUserByEmail(email);
   if (!user) {
     // This is returned like this to prevent hackers from confirming unregistered emails
     return next(
@@ -173,7 +171,7 @@ export const resetPasswordController = async (
       );
     }
 
-    await updatePassword(user.email, password, next);
+    await updatePassword(user.email, password);
     res.status(200).json({
       status: "success",
       message: "Password updated successfully",
@@ -197,7 +195,10 @@ export const getCurrentUserController = async (
 ) => {
   const currentUserEmail = req.body.email;
 
-  const user = await findUserByEmail(currentUserEmail, () => {});
+  // const user = await findUserByEmail(currentUserEmail);
+  const user = await UserModel.findOne({ email: currentUserEmail })
+    .select("-password")
+    .populate("role");
   if (!user) {
     res.status(401).json({ message: "User not authenticated" });
     return;
@@ -213,17 +214,17 @@ export const refreshTokenController = async (
 ) => {
   const { id } = req.params;
   try {
-    const user = await findUserById(id, next);
+    const user = await findUserById(id);
     if (user) {
-      const tokenIsValid = await verifyAccessToken(
-        { token: user.token, isRefreshToken: true },
-        next
-      );
+      const tokenIsValid = await verifyAccessToken({
+        token: user.token,
+        isRefreshToken: true,
+      });
       if (tokenIsValid) {
-        const accessToken = await signAccessToken(
-          { email: user.email, isRefreshToken: false },
-          next
-        );
+        const accessToken = await signAccessToken({
+          email: user.email,
+          isRefreshToken: false,
+        });
         res.status(200).json({
           status: "success",
           payload: { ...user, token: accessToken },
@@ -244,7 +245,7 @@ export const logoutController = async (
 ) => {
   const { id } = req.params;
   try {
-    const updatedUser = await updateUser(id, { token: "" }, next);
+    const updatedUser = await updateUser(id, { token: null });
 
     if (updatedUser) {
       res.status(200).json({ message: "Logged out successfully" });
