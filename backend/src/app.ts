@@ -28,6 +28,7 @@ import { isAuthenticated } from "./middlewares";
 
 const clientID = config.get("googleConfig.clientID") as string;
 const clientSecret = config.get("googleConfig.clientSecret") as string;
+const callbackURL = config.get("googleConfig.callbackURL") as string;
 
 const app: Express = express();
 
@@ -48,7 +49,7 @@ passport.use(
     {
       clientID,
       clientSecret,
-      callbackURL: "/auth/google/callback",
+      callbackURL,
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {
