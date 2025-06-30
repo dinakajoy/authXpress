@@ -69,7 +69,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
 
     checkUser();
-  }, []);
+  }, [user]);
 
   if (loading) return <PageLoader />;
   const resolvedPermissions = user?.role?.permission.map((id) => permissionsMap[id]) || [];

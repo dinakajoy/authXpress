@@ -85,7 +85,7 @@ const Login: React.FC = () => {
 
     const messageHandler = (event: MessageEvent) => {
       if (event.origin !== process.env.REACT_APP_API) return;
-
+      
       const { user } = event.data;
       if (user) {
         localStorage.setItem("token", user.token);

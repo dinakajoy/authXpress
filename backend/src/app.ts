@@ -106,15 +106,16 @@ app.get(
     }
 
     const html = `
-          <script>
+      <script>
         if (window.opener) {
-          window.opener.postMessage({ user: "${user}" }, "${config.get(
-      "environment.clientUrl"
-    )}");
+          window.opener.postMessage(
+            { user: ${JSON.stringify(user)} },
+            "${config.get("environment.clientUrl")}"
+          );
           window.close();
         } else {
-        console.log("No opener window found.");
-      }
+          console.log("No opener window found.");
+        }
       </script>
     `;
 
