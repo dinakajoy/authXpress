@@ -23,6 +23,7 @@ const Dashboard = () => {
       return navigate("/");
     }
   };
+
   const handleDisable2FA = async () => {
     setLoading(true);
     setError(null);
@@ -43,20 +44,15 @@ const Dashboard = () => {
         if (user) {
           setUser({ ...user, twoFAEnabled: false });
         }
-        setTimeout(
-          () => setError("Two-Factor Authentication has been disabled."),
-          1500
-        );
+        setError("Two-Factor Authentication has been disabled.");
       } else {
-        setTimeout(
-          () => setError("Failed to disable Two-Factor Authentication."),
-          1500
-        );
+        setError("Failed to disable Two-Factor Authentication.");
       }
     } catch {
-      setTimeout(() => setError("2FA setup failed"), 1500);
+      setError("2FA setup failed");
     } finally {
       setLoading(false);
+      setTimeout(() => setError(null), 1500);
     }
   };
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useUser } from "../context/UserContext";
-import { IUser } from "../interfaces/user";
 
 interface Setup2FAModalProps {
   id: string;

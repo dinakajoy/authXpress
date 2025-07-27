@@ -9,7 +9,7 @@ const routeLimiter = rateLimit({
   handler: (req: Request, res: Response, next: NextFunction, options) => {
     res.status(options.statusCode).json({
       success: false,
-      message: "Too many access attempts from this IP, please try again after 15 minutes",
+      message: "Too many access attempts from this device, please try again after 15 minutes",
     });
   },
 });

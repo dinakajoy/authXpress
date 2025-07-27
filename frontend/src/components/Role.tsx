@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SquarePen, Trash2 } from "lucide-react";
 import {
-  IRole,
   IPermission,
   IRoleWithPermission,
 } from "../interfaces/roles-permissions";

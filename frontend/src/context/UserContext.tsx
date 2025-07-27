@@ -14,6 +14,7 @@ interface UserContextType {
   setUser: (user: IUserWithRole | null) => void;
   isAuthenticated: boolean;
   userPermissions: string[];
+  refreshUser: () => Promise<void>;
 }
 
 // Create the context
@@ -27,58 +28,53 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   );
   const [loading, setLoading] = useState(true);
 
+  const checkUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const [currentUserRes, allPermissionsRes] = await Promise.all([
+        axios.get(`${process.env.REACT_APP_API}/auth/current-user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${process.env.REACT_APP_API}/permissions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const allPermissions = allPermissionsRes.data.permissions;
+      const map: Record<string, string> = {};
+      allPermissions.forEach((perm: any) => {
+        map[perm._id] = perm.name;
+      });
+
+      setUser(currentUserRes.data);
+      setPermissionsMap(map);
+    } catch (err) {
+      localStorage.removeItem("token");
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const checkUser = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      // Verify the token by making an API call
-      try {
-        const currentUserRes = await axios.get(
-          `${process.env.REACT_APP_API}/auth/current-user`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const allPermissionsRes = await axios.get(
-          `${process.env.REACT_APP_API}/permissions`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const allPermissions = allPermissionsRes.data.permissions;
-        const map: Record<string, string> = {};
-        allPermissions.forEach((perm: any) => {
-          map[perm._id] = perm.name;
-        });
-
-        setUser(currentUserRes.data);
-        setPermissionsMap(map);
-      } catch (err) {
-        localStorage.removeItem("token");
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     checkUser();
-  }, [user]);
+  }, []);
 
   if (loading) return <PageLoader />;
-  const resolvedPermissions = user?.role?.permission.map((id) => permissionsMap[id]) || [];
+  const resolvedPermissions =
+    user?.role?.permission.map((id) => permissionsMap[id]) || [];
 
   const value: UserContextType = {
     user,
     setUser,
     isAuthenticated: !!user,
     userPermissions: resolvedPermissions,
+    refreshUser: checkUser,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

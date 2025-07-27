@@ -7,7 +7,7 @@ import { useUser } from "../context/UserContext";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { user, setUser } = useUser();
+  const { user, refreshUser } = useUser();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,12 +54,12 @@ const Login: React.FC = () => {
       );
 
       if (data.payload && data.payload.token) {
-        setUser(data.payload);
         localStorage.setItem("token", data.payload.token);
 
         if (data.payload.twoFAEnabled) {
           setShow2FAInput(true);
         } else {
+          await refreshUser();
           return navigate("/dashboard");
         }
       }
@@ -83,13 +83,13 @@ const Login: React.FC = () => {
       "width=500,height=600"
     );
 
-    const messageHandler = (event: MessageEvent) => {
+    const messageHandler = async (event: MessageEvent) => {
       if (event.origin !== process.env.REACT_APP_API) return;
-      
+
       const { user } = event.data;
       if (user) {
         localStorage.setItem("token", user.token);
-        setUser(user);
+        await refreshUser();
         return navigate("/dashboard");
       }
     };
